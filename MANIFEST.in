@@ -1,0 +1,9 @@
+include MANIFEST
+include Makefile
+recursive-include docs *.bat
+recursive-include docs *.html
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-include tests *.py
+prune private_tests
