@@ -1,5 +1,9 @@
 include MANIFEST
 include Makefile
+include AUTHORS
+include CHANGES
+include LICENSE
+include requirements.txt
 recursive-include docs *.bat
 recursive-include docs *.html
 recursive-include docs *.py
