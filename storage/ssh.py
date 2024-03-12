@@ -1,73 +1,55 @@
 from time import sleep
 import paramiko
 
-
 class SSHException(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
-
+    pass
 
 class SSHConnectionException(SSHException):
     pass
 
-
 class SSHCommandException(SSHException):
     pass
 
-
-class SSHSession(object):
-    """
-    Generic SSHSession which can be used to run commands
-    """
+class SSHSession:
     def __init__(self, host, username, password, timeout=60):
-        """
-        Establish SSH Connection using given hostname, username and
-        password which can be used to run commands.
-        """
         self.host = host
+        self.username = username
+        self.password = password
+        self.timeout = timeout
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    def __enter__(self):
         try:
-            self.ssh.connect(hostname=host, username=username, password=password, timeout=60, look_for_keys=False)
+            self.ssh.connect(hostname=self.host, username=self.username, password=self.password, timeout=self.timeout, look_for_keys=False)
         except paramiko.BadHostKeyException:
             raise SSHConnectionException('SSH Server host key could not be verified')
         except paramiko.AuthenticationException:
             raise SSHConnectionException('SSH Authentication failed')
-        except paramiko.SSHException:
-            raise SSHConnectionException('Paramiko SSH Connection Problem')
+        except paramiko.SSHException as e:
+            raise SSHConnectionException(f'Paramiko SSH Connection Problem: {e}')
         except Exception as e:
-            raise SSHConnectionException('SSH Connection Exception: {}'.format(e))
+            raise SSHConnectionException(f'SSH Connection Exception: {e}')
+        return self
 
-    def __repr__(self):
-        """
-        Return a representation string
-        """
-        return "<%s (%s)>" % (self.__class__.__name__, self.host)
-
-    def __del__(self):
-        """Try to close connection if possible"""
+    def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             sleep(2)
             self.ssh.close()
         except Exception:
             pass
 
-    def command(self, command):
-        """
-        Runs given command and returns output, error.
-
-        This is the method you are after if none of the above fulfill your needs either to add more functionality or
-        customize. You can run any command using SSH session established and parse the output the way you like.
-
-        Example:
-        def myfunc(ssh_session):
-            output, error = ssh_session.command('date')
-            return "".join(output).strip()
-        """
+    def execute_command(self, command):
         try:
             stdin, stdout, stderr = self.ssh.exec_command(command)
             output = stdout.readlines()
             error = stderr.readlines()
             return output, error
         except Exception as e:
-            raise SSHCommandException('Unable to run given command: {}. Exception: {}'.format(command,e))
+            raise SSHCommandException(f'Unable to run given command "{command}": {e}')
+
+# 使用示例：
+# with SSHSession(host, username, password) as ssh:
+#     output, error = ssh.execute_command('ls -l')
+#     print('Output:', output)
+#     print('Error:', error)
